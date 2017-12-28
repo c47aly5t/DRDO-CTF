@@ -54,12 +54,12 @@ This is a good indication that `VirtualProtect()` might be trying to load code d
 
 The address obtained in our case is `0xbb138` and size is `0x210`. Hence, we can assume the code loaded at runtime starts at address `0xbb138` and has a size of `0x210`. At this stage if we try to disassemble at the address `0xbb138`, we will observe that the ASM code does not make any sense. This is an indication that code at that address at this point of time is encoded/encrypted. One might try to analyze how the code is decoded, but in fact there is no need of doing that. At some point of time, the control flow has to jump to the code to execute it, we don't care what happens before it. Given this fact, we will insert a breakpoint at the address of the code and continue execution. But, you will fail to insert a breakpoint on the address at this stage. Why ? If we look at the page protections then we can see that it is `PAGE_READONLY`. If you remember, we have already discused that `VirtualProtect()` is changing the page protections to `PAGE_EXECUTE_READ_WRITE`. So, it means we can insert the breakpoint after completion of execution of `VirtualProtect()` API. Again inserting a software breakpoint will not work here, we need to insert a H/W breakpoint.
 
-![APICalls.png](APICalls.png)
-
 #### Analyzing dynamically created code
 Once we hit the breakpoint and view the disassembly now, we will see some valid and meaningful instructions. We can try to analyze this code statically, but again that would be cumbersome. At this stage, if we view the ascii of the shellcode, we will be able to view the strings getting printed on the console. Now we know that this code will resolve its APIs at runtime, so now we can focus our analysis only in CALLs to APIs. The basic idea is that we need to step into `CALL` instruction till, we encounter API calls. Once we encounter API calls we need to determine what parameters are passed to the API and what will be the result of calling the API, on the program. This would give us a fairly good idea about the logic of the program.
 
 In the first pass we can idenify the APIs used to write messages to and read input from the console. The sequence of APIs called and the parameters passed to them are following:
+
+![APICalls.png](APICalls.png)
 
 After the above API call, the input key will be `XORed` with stored values and the result of first 6 Bytes of `XOR` will be compared to `DRDO@6`
 If all the above comparisons succeed, then it will print the "flag" on the screen, using a call to `WriteFile()` for each character of the flag.
